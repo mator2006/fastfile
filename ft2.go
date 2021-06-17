@@ -43,6 +43,7 @@ func Receive() {
 	}
 
 	rfscer.Getdatas()
+	// r.V()
 	rfscer.WriteFile()
 }
 

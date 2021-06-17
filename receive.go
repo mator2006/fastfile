@@ -105,26 +105,20 @@ func (r *fsc) Getdatas() {
 			if nv == r.tc-1 {
 				blocksize = r.fs % fileslice
 			}
-			var s int
-			buf := make([]byte, blocksize)
+
 			for {
-				n, err := conn.Read(buf)
+				tb, err := ioutil.ReadAll(conn)
 				if err != nil {
 					conn.Close()
-					if s == FailTryCount {
-						DebugPrint(fmt.Errorf("%s 数据读取错误，实读取/应读取:[%d/%d]", ListenIP, n, blocksize))
-						break
-					}
-					time.Sleep(LoopWaitTime)
-					s++
-					// DebugPrint(err)
+					time.Sleep(FailTryCount * LoopWaitTime)
+					tb, _ = ioutil.ReadAll(conn)
 				}
 				defer conn.Close()
-
-				if n == blocksize {
+				if len(tb) == blocksize {
 					var fsber fsb
 					fsber.index = nv
-					fsber.body = buf[:n]
+
+					fsber.body = tb
 					fsber.size = blocksize
 					r.fsber = append(r.fsber, fsber)
 					break
@@ -136,33 +130,36 @@ func (r *fsc) Getdatas() {
 }
 
 func (r *fsc) WriteFile() {
-	var s int
-	var buf bytes.Buffer
+	var fb []byte
+
 	if len(r.fsber) == r.tc {
-		for _, v := range r.fsber {
-			if len(v.body) == v.size {
-				s++
-			}
-		}
-		if s == len(r.fsber) {
-			fmt.Println("校验成功")
-			for i := 1; i <= r.tc-1; i++ {
-				for _, v := range r.fsber {
-					if v.index == i {
-						buf.Write(v.body)
-					}
+		for i := 0; i <= r.tc-1; i++ {
+			for _, v := range r.fsber {
+				if v.index == i {
+					fb = append(fb, v.body...)
 				}
 			}
-			err := ioutil.WriteFile(r.fn, buf.Bytes(), 0644)
-			if err != nil {
-				DebugPrint(err)
-				return
-			} else {
-				fmt.Println("文件写入成功")
-			}
+		}
+		err := ioutil.WriteFile(r.fn, fb, 0644)
+		if err != nil {
+			DebugPrint(err)
+			return
+		} else {
+			DebugPrint("文件写入成功")
 		}
 	} else {
-		fmt.Println("校验失败")
+		DebugPrint("校验失败")
+		r.V()
 		return
+	}
+}
+
+func (r *fsc) V() {
+	for i := 0; i <= r.tc-1; i++ {
+		for _, v := range r.fsber {
+			if v.index == i {
+				fmt.Printf("[total size:%d] [index:%d] [llsize:%d] [sjsize:%d] [%v:%v]\n", r.fs, v.index, v.size, len(v.body), v.body[:10], v.body[len(v.body)-10:])
+			}
+		}
 	}
 }

@@ -5,7 +5,7 @@ import "time"
 const (
 	fileslice                        = 512 * 1024             //512k=524288
 	PortNumber                       = 10050                  //Port number for signal
-	ListeningStratbMultipleRandRange = 20                     //1024*this
+	ListeningStratbMultipleRandRange = 5                      //1024*this
 	ListeningStratPlusRandRange      = 1000                   //1024*StratListeningbRand+this
 	ListeningWaitTime                = 3 * time.Second        //Wait listening start time
 	LoopWaitTime                     = 100 * time.Millisecond //Wait listening start time

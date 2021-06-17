@@ -106,7 +106,7 @@ func (s *fsc) Senddatas() {
 			defer conn.Close()
 
 			if n == fsber.size {
-				DebugPrint(fmt.Sprintf("%s 发送成功，发送了[%d]byte", SendIP, fsber.size))
+				//DebugPrint(fmt.Sprintf("%s 发送成功，发送了[%d]byte", SendIP, fsber.size))
 			} else {
 				DebugPrint(fmt.Errorf("%s 发送失败，[应发送/实发送] [%d/%d]", SendIP, n, fsber.size))
 			}

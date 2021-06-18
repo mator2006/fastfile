@@ -37,8 +37,40 @@ func (r *fsc) Getsignalr() {
 			DebugPrint("Get file transmission contron signal")
 			break
 		}
+		time.Sleep(LoopWaitTime)
 	}
 	r.Processfscdata(buf)
+
+	ch := make(chan string, r.tc*3)
+
+	go func() {
+		r.Getdatas(ch)
+	}()
+
+	for {
+		if len(ch) == r.tc {
+			DebugPrint("全部通道开启完成，通知对方开始发送")
+			_, err = conn.Write([]byte("OK"))
+			if err != nil {
+				DebugPrint(err)
+				return
+			}
+			break
+		}
+		// DebugPrint(fmt.Sprintf("传输通道开启 [%d/%d]", len(ch), r.tc))
+		time.Sleep(LoopWaitTime / 10)
+	}
+
+	for {
+		if len(ch) == r.tc*2 {
+			DebugPrint(fmt.Sprintf("传输完成 [%d/%d]", len(ch)-r.tc, r.tc))
+			DebugPrint("传输全部完成")
+			break
+		}
+		DebugPrint(fmt.Sprintf("传输完成 [%d/%d]", len(ch)-r.tc, r.tc))
+		time.Sleep(LoopWaitTime) //???这个地方去掉休眠就会卡住
+	}
+
 }
 
 func (r *fsc) Processfscdata(indata []byte) {
@@ -62,26 +94,7 @@ func (r *fsc) Processfscdata(indata []byte) {
 	}
 }
 
-func (r *fsc) SendReadySignials(i int) bool {
-	var b bool
-	SendIP := CIP + ":" + strconv.Itoa(PortNumber)
-	conn, err := net.Dial("tcp", SendIP)
-	if err != nil {
-		DebugPrint(fmt.Errorf("%v,第[%d]次重试", err, i+1))
-		return b
-	}
-	defer conn.Close()
-
-	_, err = conn.Write([]byte("OK"))
-	if err != nil {
-		DebugPrint(err)
-		return b
-	}
-	defer conn.Close()
-	return true
-}
-
-func (r *fsc) Getdatas() {
+func (r *fsc) Getdatas(ch chan string) {
 	var vg sync.WaitGroup
 
 	for i := 0; i <= r.tc-1; i++ {
@@ -95,6 +108,10 @@ func (r *fsc) Getdatas() {
 				return
 			}
 			defer listen.Close()
+
+			go func() {
+				ch <- ListenIP
+			}()
 
 			conn, err := listen.Accept()
 			if err != nil {
@@ -122,12 +139,17 @@ func (r *fsc) Getdatas() {
 					fsber.body = tb
 					fsber.size = blocksize
 					r.fsber = append(r.fsber, fsber)
+
 					break
 				}
+				time.Sleep(LoopWaitTime)
 			}
+			ch <- fmt.Sprintf("%s:[ok]", ListenIP)
 		}(i)
 	}
+
 	vg.Wait()
+
 }
 
 func (r *fsc) WriteFile() {
@@ -141,6 +163,7 @@ func (r *fsc) WriteFile() {
 				}
 			}
 		}
+		r.fn = strings.ReplaceAll(r.fn, `\`, `/`)
 		r.fn = path.Base(r.fn)
 		err := ioutil.WriteFile(r.fn, fb, 0644)
 		if err != nil {

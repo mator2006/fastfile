@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"os"
-	"sync"
 	"time"
 )
 
@@ -21,55 +20,34 @@ func main() {
 
 func Receive() {
 	var rfscer fsc
-	var vg sync.WaitGroup
 
-	vg.Add(1)
-	go func() {
-		defer vg.Done()
-		rfscer.Getsignalr()
-	}()
+	rfscer.Getsignalr()
 
-	vg.Wait()
-
-	for i := 0; i <= FailTryCount-1; i++ {
-		if rfscer.SendReadySignials(i) {
-			break
-		}
-		if i == FailTryCount-1 {
-			DebugPrint(fmt.Errorf("Can not Send reday signal"))
-			return
-		}
-		time.Sleep(100 * time.Millisecond)
-	}
-
-	rfscer.Getdatas()
 	rfscer.WriteFile()
 }
 
 func Send(fn string) {
 	var fscer fsc
-	var vg sync.WaitGroup
+
 	if fn == "" {
-		DebugPrint(fmt.Errorf("file name is wrong"))
+		DebugPrint(fmt.Errorf("File name is wrong !"))
 		return
 	}
 	fscer.fn = fn
 	fscer.Initfsc()
-	vg.Add(1)
-	go func() {
-		defer vg.Done()
-		fscer.Getsignals()
-	}()
-	for i := 0; i <= FailTryCount-1; i++ {
-		if fscer.Sendfsc(i) {
+
+	var s int
+	for {
+		if fscer.Sendfsc() {
 			break
 		}
-		if i == FailTryCount-1 {
-			DebugPrint(fmt.Errorf("Can not Send file send control infomation"))
+		if s == FailTryCount-1 {
+			DebugPrint(fmt.Errorf("Can not connection server !"))
 			return
 		}
-		time.Sleep(100 * time.Millisecond)
+		s++
+		time.Sleep(ListeningWaitTime)
 	}
-	vg.Wait()
+
 	fscer.Senddatas()
 }

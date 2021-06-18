@@ -37,40 +37,12 @@ func (s *fsc) Initfsc() {
 
 }
 
-func (s *fsc) Getsignals() {
-	ListenIP := CIP + ":" + strconv.Itoa(PortNumber)
-	listen, err := net.Listen("tcp", ListenIP)
-	if err != nil {
-		DebugPrint(err)
-		return
-	}
-	defer listen.Close()
-
-	conn, err := listen.Accept()
-	if err != nil {
-		DebugPrint(err)
-	}
-	defer conn.Close()
-
-	buf := make([]byte, SignalByteSize)
-	for {
-		n, err := conn.Read(buf)
-		if err != nil {
-			DebugPrint(err)
-		}
-		if bytes.Contains(buf[:n], []byte("OK")) {
-			DebugPrint("Get OK signal")
-			break
-		}
-	}
-}
-
-func (s *fsc) Sendfsc(i int) bool {
+func (s *fsc) Sendfsc() bool {
 	var b bool
 	SendIP := SIP + ":" + strconv.Itoa(PortNumber)
 	conn, err := net.Dial("tcp", SendIP)
 	if err != nil {
-		DebugPrint(fmt.Errorf("%v,第[%d]次重试", err, i+1))
+		DebugPrint(err)
 		return b
 	}
 	defer conn.Close()
@@ -81,7 +53,22 @@ func (s *fsc) Sendfsc(i int) bool {
 		return b
 	}
 	defer conn.Close()
-	return true
+
+	tb := make([]byte, SignalByteSize)
+	for {
+		_, err := conn.Read(tb)
+		if err != nil {
+			DebugPrint(err)
+			time.Sleep(FailTryCount * LoopWaitTime)
+		}
+		defer conn.Close()
+		if bytes.Contains(tb, []byte("OK")) {
+			DebugPrint("Get OK signal")
+			break
+		}
+	}
+	b = true
+	return b
 }
 
 func (s *fsc) Senddatas() {
@@ -106,13 +93,16 @@ func (s *fsc) Senddatas() {
 			defer conn.Close()
 
 			if n == fsber.size {
+				fmt.Printf(".")
 				//DebugPrint(fmt.Sprintf("%s 发送成功，发送了[%d]byte", SendIP, fsber.size))
 			} else {
-				DebugPrint(fmt.Errorf("%s 发送失败，[应发送/实发送] [%d/%d]", SendIP, n, fsber.size))
+				fmt.Printf("!")
+				//DebugPrint(fmt.Errorf("%s 发送失败，[实发送/应发送] [%d/%d]", SendIP, n, fsber.size))
 			}
 		}(v)
 	}
 	vg.Wait()
+	fmt.Printf("\n")
 }
 
 func (s *fsc) ReadFile() {

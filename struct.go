@@ -11,8 +11,8 @@ const (
 	LoopWaitTime                     = 100 * time.Millisecond //Wait listening start time
 	SignalByteSize                   = 512                    //SignalByteSize
 	FailTryCount                     = 5                      //Fail Try Count
-	SIP                              = "192.168.19.201"
-	CIP                              = "192.168.19.202"
+	SIP                              = "192.168.19.201"       //Server IP
+	CIP                              = "192.168.19.202"       //Client IP
 )
 
 type fsc struct {

@@ -43,7 +43,6 @@ func Receive() {
 	}
 
 	rfscer.Getdatas()
-	// r.V()
 	rfscer.WriteFile()
 }
 
@@ -73,7 +72,4 @@ func Send(fn string) {
 	}
 	vg.Wait()
 	fscer.Senddatas()
-	// for _, v := range fscer.fsber {
-	// 	fmt.Printf("index[%d] [%d:%d] block size:%d body:%v\n", v.index, v.start, v.stop, v.size, v.body[:10])
-	// }
 }

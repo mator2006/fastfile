@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net"
+	"path"
 	"strconv"
 	"strings"
 	"sync"
@@ -140,6 +141,7 @@ func (r *fsc) WriteFile() {
 				}
 			}
 		}
+		r.fn = path.Base(r.fn)
 		err := ioutil.WriteFile(r.fn, fb, 0644)
 		if err != nil {
 			DebugPrint(err)

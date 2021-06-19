@@ -1,3 +1,3 @@
-module github.com/mator2006/FT2
+module github.com/mator2006/fastfile
 
 go 1.14

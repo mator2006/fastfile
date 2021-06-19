@@ -18,7 +18,7 @@ func (s *fsc) Readfsc() error {
 		DP(err)
 		return err
 	}
-	s.fs = int(filestat.Size())
+	s.fs = int64(filestat.Size())
 	rand.Seed(time.Now().UnixNano())
 	s.ps = rand.Intn(s.par.ListeningStratbMultipleRandRange)
 	if s.ps == 0 {
@@ -29,14 +29,14 @@ func (s *fsc) Readfsc() error {
 	s.pi = rand.Intn(s.par.ListeningStratPlusRandRange)
 	switch {
 	case s.fs >= 100*M1 && s.fs < G1:
-		s.par.FileSliceSize = M1
+		s.par.FileSliceSize = 5 * M1
 	case s.fs >= G1:
 		s.par.FileSliceSize = 10 * M1
 	default:
 		s.par.FileSliceSize = 512 * 1024
 	}
 
-	s.tc = s.fs / s.par.FileSliceSize
+	s.tc = int(s.fs / s.par.FileSliceSize)
 	if s.fs%s.par.FileSliceSize != 0 {
 		s.tc += 1
 	}
@@ -80,7 +80,7 @@ func (s *fsc) SendDatas() error {
 			}
 			defer conn.Close()
 
-			if n == s.fsber[i].size {
+			if int64(n) == s.fsber[i].size {
 				fmt.Printf(".")
 			} else {
 				fmt.Printf("!")
@@ -104,15 +104,15 @@ func (s *fsc) ReadFileBody() error {
 	for i := 0; i < s.tc; i++ {
 		var tv1 fsb
 		tv1.index = i
-		tv1.start = i * s.par.FileSliceSize
+		tv1.start = int64(i) * s.par.FileSliceSize
 
 		tv1.stop = tv1.start + s.par.FileSliceSize
-		if len(vtb) < tv1.stop {
-			tv1.stop = len(vtb)
+		if int64(len(vtb)) < tv1.stop {
+			tv1.stop = int64(len(vtb))
 		}
 
 		tv1.body = vtb[tv1.start:tv1.stop]
-		tv1.size = len(tv1.body)
+		tv1.size = int64(len(tv1.body))
 		s.fsber = append(s.fsber, tv1)
 	}
 	return err

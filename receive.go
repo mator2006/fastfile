@@ -110,7 +110,7 @@ func (r *fsc) ReciveData() error {
 						return
 					}
 				}
-				if len(tb) == blocksize {
+				if int64(len(tb)) == blocksize {
 					var fsber fsb
 					fsber.index = i
 
@@ -139,7 +139,7 @@ func (r *fsc) Writefile() error {
 		}
 	}
 
-	if len(tvbs) == r.fs {
+	if int64(len(tvbs)) == r.fs {
 		r.fn = pathc(r.fn)
 		err = ioutil.WriteFile(r.fn, tvbs, 0644)
 		if err != nil {
@@ -168,7 +168,7 @@ func (r *fsc) Processfscdata(indata []byte) error {
 	}
 	if len(tv2) >= 5 {
 		r.fn = tv2[0]
-		r.fs, err = strconv.Atoi(tv2[1])
+		r.fs, err = strconv.ParseInt(tv2[1], 10, 64)
 		if err != nil {
 			DP(err)
 			return err
@@ -202,7 +202,7 @@ func (r *fsc) Processfscdata(indata []byte) error {
 
 	switch {
 	case r.fs >= 100*M1 && r.fs < G1:
-		r.par.FileSliceSize = M1
+		r.par.FileSliceSize = 5 * M1
 	case r.fs >= G1:
 		r.par.FileSliceSize = 10 * M1
 	default:

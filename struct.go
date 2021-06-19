@@ -12,7 +12,7 @@ const (
 type fsc struct {
 	par   ProgParameter //Program Parameter
 	fn    string        //filename
-	fs    int           //file size
+	fs    int64         //file size
 	ps    int           //Port for Listening Strat Multiple
 	pi    int           //Port for Listening Strat Plus
 	tc    int           //Transmission Count
@@ -22,10 +22,10 @@ type fsc struct {
 
 type fsb struct {
 	index int    //index
-	start int    //byte start for file slice
-	stop  int    //byte stop for file slice
+	start int64  //byte start for file slice
+	stop  int64  //byte stop for file slice
 	body  []byte //byte body for file slice
-	size  int    //byte body size for file slice
+	size  int64  //byte body size for file slice
 }
 
 type ProgParameter struct {
@@ -34,7 +34,7 @@ type ProgParameter struct {
 	ListeningStratPlusRandRange      int           //1024*StratListeningbRand+this
 	ListeningWaitTime                time.Duration //Wait listening start time
 	LoopWaitTime                     time.Duration //Wait listening start time
-	FileSliceSize                    int           //File slice size
+	FileSliceSize                    int64         //File slice size
 	SignalByteSize                   int           //SignalByteSize
 	FailTryCount                     int           //Fail Try Count
 	SIP                              string        //Server IP

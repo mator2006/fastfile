@@ -5,81 +5,161 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net"
-	"path"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
 )
 
-func (r *fsc) Getsignalr() {
-	ListenIP := SIP + ":" + strconv.Itoa(PortNumber)
+func (r *fsc) Listening() error {
+	var err error
+	ListenIP := fmt.Sprintf("%s:%s", ListeningIP, r.par.PortNumber)
 	listen, err := net.Listen("tcp", ListenIP)
 	if err != nil {
-		DebugPrint(err)
-		return
+		DP(err)
+		return err
 	}
 	defer listen.Close()
+	IP("Listenning for file trandmission control signal.")
 
 	conn, err := listen.Accept()
 	if err != nil {
-		DebugPrint(err)
+		DP(err)
+		return err
 	}
 	defer conn.Close()
 
-	buf := make([]byte, SignalByteSize)
+	buf := make([]byte, r.par.SignalByteSize)
 	for {
 		n, err := conn.Read(buf)
 		if err != nil {
-			DebugPrint(err)
+			DP(err)
 		}
 		if bytes.Contains(buf[:n], []byte("EOF")) {
-			DebugPrint("Get file transmission contron signal")
+			DP("Get file transmission contron signal.")
 			break
 		}
-		time.Sleep(LoopWaitTime)
+		time.Sleep(r.par.LoopWaitTime)
 	}
-	r.Processfscdata(buf)
 
-	ch := make(chan string, r.tc*3)
+	err = r.Processfscdata(buf)
+	if err != nil {
+		DP(err)
+		return err
+	}
 
 	go func() {
-		r.Getdatas(ch)
+		err = r.ReciveData()
+		if err != nil {
+			DP(err)
+			return
+		}
 	}()
 
 	for {
-		if len(ch) == r.tc {
-			DebugPrint("全部通道开启完成，通知对方开始发送")
-			_, err = conn.Write([]byte("OK"))
-			if err != nil {
-				DebugPrint(err)
-				return
-			}
+		if len(r.ch) == r.tc {
+			IP("All file data channel started.")
 			break
 		}
-		// DebugPrint(fmt.Sprintf("传输通道开启 [%d/%d]", len(ch), r.tc))
-		time.Sleep(LoopWaitTime / 10)
+		//fmt.Printf("channel_lenth:[%d]\n", len(r.ch))
+		time.Sleep(r.par.LoopWaitTime)
 	}
-
-	for {
-		if len(ch) == r.tc*2 {
-			DebugPrint(fmt.Sprintf("传输完成 [%d/%d]", len(ch)-r.tc, r.tc))
-			DebugPrint("传输全部完成")
-			break
-		}
-		DebugPrint(fmt.Sprintf("传输完成 [%d/%d]", len(ch)-r.tc, r.tc))
-		time.Sleep(LoopWaitTime) //???这个地方去掉休眠就会卡住
+	_, err = conn.Write([]byte("OK"))
+	if err != nil {
+		DP(err)
+		return err
 	}
-
+	IP("Ready signal sended.")
+	return err
 }
 
-func (r *fsc) Processfscdata(indata []byte) {
+func (r *fsc) ReciveData() error {
+	var err error
+	var vg sync.WaitGroup
+	for i := 0; i < r.tc; i++ {
+		vg.Add(1)
+		go func(i int) {
+			defer vg.Done()
+			ListenIP := fmt.Sprintf("%s:%s", ListeningIP, strconv.Itoa(1024*r.ps+r.pi+i))
+			listen, err := net.Listen("tcp", ListenIP)
+			if err != nil {
+				DP(err)
+				return
+			}
+			defer listen.Close()
+
+			r.ch <- fmt.Sprintf("%s:[Ready]", ListenIP)
+
+			conn, err := listen.Accept()
+			if err != nil {
+				DP(err)
+				return
+			}
+			defer conn.Close()
+
+			blocksize := r.par.FileSliceSize
+			if i == r.tc-1 {
+				blocksize = r.fs % r.par.FileSliceSize
+			}
+
+			for {
+				tb, err := ioutil.ReadAll(conn)
+				if err != nil {
+					if err != nil {
+						DP(err)
+						return
+					}
+				}
+				if len(tb) == blocksize {
+					var fsber fsb
+					fsber.index = i
+
+					fsber.body = tb
+					fsber.size = blocksize
+					r.fsber = append(r.fsber, fsber)
+					r.ch <- fmt.Sprintf("[%d:%d]", len(fsber.body), fsber.size)
+					break
+				}
+			}
+		}(i)
+	}
+	vg.Wait()
+	return err
+}
+
+func (r *fsc) Writefile() error {
+	var err error
+	var tvbs []byte
+	for i := 0; i < r.tc; i++ {
+		for _, v := range r.fsber {
+			if v.index == i {
+				tvbs = append(tvbs, v.body...)
+				continue
+			}
+		}
+	}
+
+	if len(tvbs) == r.fs {
+		err = ioutil.WriteFile(r.fn, tvbs, 0644)
+		if err != nil {
+			return err
+		}
+		IP("File wirte complete.")
+	} else {
+		err = fmt.Errorf("File verify fail!")
+		r.V()
+		return err
+	}
+
+	return err
+}
+
+func (r *fsc) Processfscdata(indata []byte) error {
+	var err error
 	var tv1, tv2 []string
 	tv1 = strings.Split(string(indata), "\n")
 	for _, v := range tv1 {
-		v = strings.ReplaceAll(v, "\n", "")
-		v = strings.ReplaceAll(v, "\r", "")
-		v = strings.ReplaceAll(v, " ", "")
+		v = StrFormat(v)
 		if v == "" {
 			continue
 		}
@@ -87,104 +167,48 @@ func (r *fsc) Processfscdata(indata []byte) {
 	}
 	if len(tv2) >= 5 {
 		r.fn = tv2[0]
-		r.fs, _ = strconv.Atoi(tv2[1])
-		r.ps, _ = strconv.Atoi(tv2[2])
-		r.pi, _ = strconv.Atoi(tv2[3])
-		r.tc, _ = strconv.Atoi(tv2[4])
-	}
-}
-
-func (r *fsc) Getdatas(ch chan string) {
-	var vg sync.WaitGroup
-
-	for i := 0; i <= r.tc-1; i++ {
-		vg.Add(1)
-		go func(nv int) {
-			defer vg.Done()
-			ListenIP := SIP + ":" + strconv.Itoa(1024*r.ps+r.pi+nv)
-			listen, err := net.Listen("tcp", ListenIP)
-			if err != nil {
-				DebugPrint(err)
-				return
-			}
-			defer listen.Close()
-
-			go func() {
-				ch <- ListenIP
-			}()
-
-			conn, err := listen.Accept()
-			if err != nil {
-				DebugPrint(err)
-			}
-			defer conn.Close()
-
-			blocksize := fileslice
-			if nv == r.tc-1 {
-				blocksize = r.fs % fileslice
-			}
-
-			for {
-				tb, err := ioutil.ReadAll(conn)
-				if err != nil {
-					conn.Close()
-					time.Sleep(FailTryCount * LoopWaitTime)
-					tb, _ = ioutil.ReadAll(conn)
-				}
-				defer conn.Close()
-				if len(tb) == blocksize {
-					var fsber fsb
-					fsber.index = nv
-
-					fsber.body = tb
-					fsber.size = blocksize
-					r.fsber = append(r.fsber, fsber)
-
-					break
-				}
-				time.Sleep(LoopWaitTime)
-			}
-			ch <- fmt.Sprintf("%s:[ok]", ListenIP)
-		}(i)
-	}
-
-	vg.Wait()
-
-}
-
-func (r *fsc) WriteFile() {
-	var fb []byte
-
-	if len(r.fsber) == r.tc {
-		for i := 0; i <= r.tc-1; i++ {
-			for _, v := range r.fsber {
-				if v.index == i {
-					fb = append(fb, v.body...)
-				}
-			}
-		}
-		r.fn = strings.ReplaceAll(r.fn, `\`, `/`)
-		r.fn = path.Base(r.fn)
-		err := ioutil.WriteFile(r.fn, fb, 0644)
+		r.fs, err = strconv.Atoi(tv2[1])
 		if err != nil {
-			DebugPrint(err)
-			return
-		} else {
-			DebugPrint("文件写入成功")
+			DP(err)
+			return err
 		}
-	} else {
-		DebugPrint("校验失败")
-		r.V()
-		return
+		r.ps, err = strconv.Atoi(tv2[2])
+		if err != nil {
+			DP(err)
+			return err
+		}
+		r.pi, err = strconv.Atoi(tv2[3])
+		if err != nil {
+			DP(err)
+			return err
+		}
+		r.tc, err = strconv.Atoi(tv2[4])
+		if err != nil {
+			DP(err)
+			return err
+		}
 	}
-}
+	switch {
+	case r.fn == "":
+		err = fmt.Errorf("Invalid data for filename!")
+	case r.fs == 0:
+		err = fmt.Errorf("Invalid data for filesize!")
+	case r.ps == 0:
+		err = fmt.Errorf("Invalid data for Port start!")
+	case r.tc == 0:
+		err = fmt.Errorf("Invalid data for transmission count!")
+	}
 
-func (r *fsc) V() {
-	for i := 0; i <= r.tc-1; i++ {
-		for _, v := range r.fsber {
-			if v.index == i {
-				fmt.Printf("[total size:%d] [index:%d] [llsize:%d] [sjsize:%d] [%v:%v]\n", r.fs, v.index, v.size, len(v.body), v.body[:10], v.body[len(v.body)-10:])
-			}
-		}
+	switch {
+	case r.fs >= 100*M1 && r.fs < G1:
+		r.par.FileSliceSize = M1
+	case r.fs >= G1:
+		r.par.FileSliceSize = 10 * M1
+	default:
+		r.par.FileSliceSize = 512 * 1024
 	}
+
+	r.ch = make(chan string, r.tc*3)
+
+	return err
 }

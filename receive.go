@@ -140,6 +140,7 @@ func (r *fsc) Writefile() error {
 	}
 
 	if len(tvbs) == r.fs {
+		r.fn = pathc(r.fn)
 		err = ioutil.WriteFile(r.fn, tvbs, 0644)
 		if err != nil {
 			return err

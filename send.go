@@ -51,7 +51,7 @@ func (s *fsc) SendDatas() error {
 	for {
 		if len(s.ch) == 1 {
 			<-s.ch
-			IP("File reading and sending...")
+			IP("File reading and sending.")
 			break
 		}
 		time.Sleep(s.par.LoopWaitTime)
@@ -73,7 +73,8 @@ func (s *fsc) SendDatas() error {
 				return
 			}
 			defer conn.Close()
-			n, err := conn.Write(s.fsber[i].body)
+
+			n, err := conn.Write(*s.fsber[i].body)
 			if err != nil {
 				DP(err)
 				return
@@ -81,16 +82,23 @@ func (s *fsc) SendDatas() error {
 			defer conn.Close()
 
 			if int64(n) == s.fsber[i].size {
-				fmt.Printf(".")
+				if InfoPrintSwitch {
+					fmt.Printf(".")
+				}
+
 			} else {
-				fmt.Printf("!")
+				if InfoPrintSwitch {
+					fmt.Printf("!")
+				}
 				DP(fmt.Errorf("%s 发送失败，[实发送/应发送] [%d/%d]", SendIP, n, s.fsber[i].size))
 			}
 
 		}(i)
 	}
 	vg.Wait()
-	fmt.Printf("\nFile transmission complete.\n")
+
+	fmt.Printf("\n")
+
 	return err
 }
 
@@ -110,9 +118,9 @@ func (s *fsc) ReadFileBody() error {
 		if int64(len(vtb)) < tv1.stop {
 			tv1.stop = int64(len(vtb))
 		}
-
-		tv1.body = vtb[tv1.start:tv1.stop]
-		tv1.size = int64(len(tv1.body))
+		vtbs := vtb[tv1.start:tv1.stop]
+		tv1.body = &vtbs
+		tv1.size = int64(tv1.stop - tv1.start)
 		s.fsber = append(s.fsber, tv1)
 	}
 	return err
@@ -144,7 +152,7 @@ func (s *fsc) SendSignal() error {
 	defer conn.Close()
 	if bytes.Contains(tb, []byte("OK")) {
 		IP("Get signal for server ready,send start.")
-		s.ch <- "OK"
+		s.ch <- "Get signal for server ready,send start."
 		return err
 	}
 	err = fmt.Errorf("Error signal!")

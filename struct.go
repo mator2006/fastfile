@@ -3,10 +3,17 @@ package main
 import "time"
 
 const (
-	M1          = 1 * 1024 * 1024                                                                                                                                                                                               //1M
-	G1          = 1 * 1024 * 1024 * 1024                                                                                                                                                                                        //1G                                                                                                                                                                                //1T
-	ListeningIP = "0.0.0.0"                                                                                                                                                                                                     //ListeningIP                                                                                                                                                                                //1T
-	UsageText   = "\nUsage:\n\n[f]\t\t\t\t\t\t enter listenning Mode\n[f] -h \t\t\t\t\t help usage\n[f] ipadress filename\t\t\t enter send mode,ipadress is server ip,filename is send file name\n\nCopyRight Mator by 2021.06" //Usage
+	M1          = 1 * 1024 * 1024        //1M
+	G1          = 1 * 1024 * 1024 * 1024 //1G                                                                                                                                                                                //1T
+	ListeningIP = "0.0.0.0"              //ListeningIP                                                                                                                                                                                //1T
+	UsageText   = `
+	Usage:
+
+	[f] -h                      print usage
+	[f]                         enter listenning Mode
+	[f] ipadress filename       enter send mode,ipadress is server ip,filename is send file name
+	
+	CopyRight Mator by 2021.06`  //Usage
 )
 
 type fsc struct {
@@ -21,11 +28,11 @@ type fsc struct {
 }
 
 type fsb struct {
-	index int    //index
-	start int64  //byte start for file slice
-	stop  int64  //byte stop for file slice
-	body  []byte //byte body for file slice
-	size  int64  //byte body size for file slice
+	index int     //index
+	start int64   //byte start for file slice
+	stop  int64   //byte stop for file slice
+	body  *[]byte //byte body for file slice
+	size  int64   //byte body size for file slice
 }
 
 type ProgParameter struct {

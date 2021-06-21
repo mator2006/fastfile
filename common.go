@@ -76,8 +76,9 @@ func (s *fsc) V() {
 	_, _ = fmt.Scanln()
 	var tvbs []byte
 	for _, v := range s.fsber {
-		fmt.Printf("[%d]\t[%d]\t[%d:%d]\t%s\t%v\n", v.index, v.size, v.start, v.stop, fmt.Sprintf("%x", md5.Sum(v.body)), v.body[:4])
-		tvbs = append(tvbs, v.body...)
+		vt1 := *v.body
+		fmt.Printf("[%d]\t[%d]\t[%d:%d]\t%s\t%v\n", v.index, v.size, v.start, v.stop, fmt.Sprintf("%x", md5.Sum(*v.body)), vt1[:4])
+		tvbs = append(tvbs, *v.body...)
 	}
 	fmt.Printf("\nPress enter key to contiue.")
 	_, _ = fmt.Scanln()

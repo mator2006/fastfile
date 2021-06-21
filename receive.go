@@ -88,7 +88,7 @@ func (r *fsc) ReciveData() error {
 			}
 			defer listen.Close()
 
-			r.ch <- fmt.Sprintf("%s:[Ready]", ListenIP)
+			r.ch <- fmt.Sprintf("%d", time.Now().Unix())
 
 			conn, err := listen.Accept()
 			if err != nil {
@@ -114,10 +114,10 @@ func (r *fsc) ReciveData() error {
 					var fsber fsb
 					fsber.index = i
 
-					fsber.body = tb
+					fsber.body = &tb
 					fsber.size = blocksize
 					r.fsber = append(r.fsber, fsber)
-					r.ch <- fmt.Sprintf("[%d:%d]", len(fsber.body), fsber.size)
+					r.ch <- fmt.Sprintf("%d", time.Now().Unix())
 					break
 				}
 			}
@@ -133,7 +133,7 @@ func (r *fsc) Writefile() error {
 	for i := 0; i < r.tc; i++ {
 		for _, v := range r.fsber {
 			if v.index == i {
-				tvbs = append(tvbs, v.body...)
+				tvbs = append(tvbs, *v.body...)
 				continue
 			}
 		}
@@ -192,12 +192,16 @@ func (r *fsc) Processfscdata(indata []byte) error {
 	switch {
 	case r.fn == "":
 		err = fmt.Errorf("Invalid data for filename!")
+		return err
 	case r.fs == 0:
 		err = fmt.Errorf("Invalid data for filesize!")
+		return err
 	case r.ps == 0:
 		err = fmt.Errorf("Invalid data for Port start!")
+		return err
 	case r.tc == 0:
 		err = fmt.Errorf("Invalid data for transmission count!")
+		return err
 	}
 
 	switch {

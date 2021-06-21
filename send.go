@@ -22,7 +22,9 @@ func (s *fsc) Readfsc() error {
 	rand.Seed(time.Now().UnixNano())
 	s.ps = rand.Intn(s.par.ListeningStratbMultipleRandRange)
 	if s.ps == 0 {
-		s.ps += 1
+		s.ps += 11
+	} else {
+		s.ps += 10
 	}
 
 	rand.Seed(time.Now().UnixNano())
@@ -51,14 +53,17 @@ func (s *fsc) SendDatas() error {
 	for {
 		if len(s.ch) == 1 {
 			<-s.ch
-			IP("File reading and sending.")
+			IP("File read and sending.")
 			break
 		}
 		time.Sleep(s.par.LoopWaitTime)
 	}
 	err = s.ReadFileBody()
 	if err != nil {
-		DP(err)
+		return err
+	}
+	fb, err := ioutil.ReadFile(s.fn)
+	if err != nil {
 		return err
 	}
 	var vg sync.WaitGroup
@@ -74,7 +79,7 @@ func (s *fsc) SendDatas() error {
 			}
 			defer conn.Close()
 
-			n, err := conn.Write(*s.fsber[i].body)
+			n, err := conn.Write(fb[s.fsber[i].start:s.fsber[i].stop])
 			if err != nil {
 				DP(err)
 				return
@@ -85,7 +90,6 @@ func (s *fsc) SendDatas() error {
 				if InfoPrintSwitch {
 					fmt.Printf(".")
 				}
-
 			} else {
 				if InfoPrintSwitch {
 					fmt.Printf("!")
@@ -96,31 +100,26 @@ func (s *fsc) SendDatas() error {
 		}(i)
 	}
 	vg.Wait()
-
-	fmt.Printf("\n")
-
+	if InfoPrintSwitch {
+		fmt.Printf("\n")
+	}
 	return err
 }
 
 func (s *fsc) ReadFileBody() error {
 	var err error
-	vtb, err := ioutil.ReadFile(s.fn)
-	if err != nil {
-		DP(err)
-		return err
-	}
+
 	for i := 0; i < s.tc; i++ {
 		var tv1 fsb
 		tv1.index = i
 		tv1.start = int64(i) * s.par.FileSliceSize
 
 		tv1.stop = tv1.start + s.par.FileSliceSize
-		if int64(len(vtb)) < tv1.stop {
-			tv1.stop = int64(len(vtb))
+		if tv1.stop > s.fs {
+			tv1.stop = s.fs
 		}
-		vtbs := vtb[tv1.start:tv1.stop]
-		tv1.body = &vtbs
-		tv1.size = int64(tv1.stop - tv1.start)
+
+		tv1.size = tv1.stop - tv1.start
 		s.fsber = append(s.fsber, tv1)
 	}
 	return err

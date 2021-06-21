@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net"
+	"os"
 	"strconv"
 	"strings"
 	"sync"
@@ -129,28 +130,43 @@ func (r *fsc) ReciveData() error {
 
 func (r *fsc) Writefile() error {
 	var err error
-	var tvbs []byte
+	r.fn = pathc(r.fn)
+
+	f, err := os.Create(r.fn)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	IP("file writing.")
+
 	for i := 0; i < r.tc; i++ {
 		for _, v := range r.fsber {
 			if v.index == i {
-				tvbs = append(tvbs, *v.body...)
-				continue
+				n, err := f.Write(*v.body)
+				if err != nil {
+					return err
+				}
+				if n == int(v.size) {
+					if InfoPrintSwitch {
+						fmt.Printf(".")
+					}
+				} else {
+					if InfoPrintSwitch {
+						fmt.Printf("!")
+					}
+				}
+				break
 			}
 		}
 	}
 
-	if int64(len(tvbs)) == r.fs {
-		r.fn = pathc(r.fn)
-		err = ioutil.WriteFile(r.fn, tvbs, 0644)
-		if err != nil {
-			return err
-		}
-		IP("File wirte complete.")
-	} else {
-		err = fmt.Errorf("File verify fail!")
-		r.V()
-		return err
+	if InfoPrintSwitch {
+		fmt.Printf("\n")
 	}
+	// if sss != r.fs {
+	// 	err = fmt.Errorf("file verify fail.")
+	// 	return err
+	// }
 
 	return err
 }

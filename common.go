@@ -59,7 +59,7 @@ func (p *fsc) Init() {
 	p.par.PortNumber = "10050"
 
 	p.par.ListeningStratPlusRandRange = 1000
-	p.par.ListeningStratbMultipleRandRange = 10
+	p.par.ListeningStratbMultipleRandRange = 5
 
 	p.par.ListeningWaitTime = 5 * time.Second
 	p.par.LoopWaitTime = 100 * time.Millisecond

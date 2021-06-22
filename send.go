@@ -53,7 +53,6 @@ func (s *fsc) SendDatas() error {
 	for {
 		if len(s.ch) == 1 {
 			<-s.ch
-			IP("File read and sending.")
 			break
 		}
 		time.Sleep(s.par.LoopWaitTime)
@@ -62,10 +61,14 @@ func (s *fsc) SendDatas() error {
 	if err != nil {
 		return err
 	}
+	IP("File analysis complete.")
+
 	fb, err := ioutil.ReadFile(s.fn)
 	if err != nil {
 		return err
 	}
+	IP("File read complete.")
+
 	var vg sync.WaitGroup
 	for i := 0; i < s.tc; i++ {
 		vg.Add(1)

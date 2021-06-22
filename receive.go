@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"bytes"
 	"fmt"
 	"io/ioutil"
@@ -112,6 +113,9 @@ func (r *fsc) ReciveData() error {
 					}
 				}
 				if int64(len(tb)) == blocksize {
+					if InfoPrintSwitch {
+						fmt.Printf(".")
+					}
 					var fsber fsb
 					fsber.index = i
 
@@ -125,49 +129,46 @@ func (r *fsc) ReciveData() error {
 		}(i)
 	}
 	vg.Wait()
+	if InfoPrintSwitch {
+		fmt.Printf("\n")
+	}
 	return err
 }
 
 func (r *fsc) Writefile() error {
 	var err error
-	r.fn = pathc(r.fn)
-
 	f, err := os.Create(r.fn)
 	if err != nil {
+		DP(err)
 		return err
 	}
 	defer f.Close()
-	IP("file writing.")
+	BufferedWriter := bufio.NewWriter(f)
 
 	for i := 0; i < r.tc; i++ {
 		for _, v := range r.fsber {
 			if v.index == i {
-				n, err := f.Write(*v.body)
+				n, err := BufferedWriter.Write(*v.body)
 				if err != nil {
+					DP(err)
 					return err
 				}
-				if n == int(v.size) {
+				if int64(n) == v.size {
 					if InfoPrintSwitch {
 						fmt.Printf(".")
-					}
-				} else {
-					if InfoPrintSwitch {
-						fmt.Printf("!")
+					} else {
+						if InfoPrintSwitch {
+							fmt.Printf("!")
+						}
 					}
 				}
 				break
 			}
 		}
 	}
-
 	if InfoPrintSwitch {
 		fmt.Printf("\n")
 	}
-	// if sss != r.fs {
-	// 	err = fmt.Errorf("file verify fail.")
-	// 	return err
-	// }
-
 	return err
 }
 

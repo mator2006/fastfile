@@ -172,6 +172,7 @@ func (r *fsc) Writefile() error {
 	if InfoPrintSwitch {
 		fmt.Printf("\n")
 	}
+	IP("file write complete.")
 	return err
 }
 

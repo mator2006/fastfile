@@ -70,5 +70,4 @@ func Receive() {
 		DP(err)
 		return
 	}
-	IP("file write complete.")
 }

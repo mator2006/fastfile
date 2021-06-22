@@ -90,3 +90,14 @@ func Usage(Args string) {
 	text := strings.ReplaceAll(UsageText, "[f]", Args)
 	fmt.Println(text)
 }
+
+func (ds *fsc) DefinitionFileSlice() {
+	switch {
+	case ds.fs >= 100*M1 && ds.fs < G1: //根据文件大小调整分块大小
+		ds.par.FileSliceSize = 5 * M1
+	case ds.fs >= G1:
+		ds.par.FileSliceSize = 10 * M1
+	default:
+		ds.par.FileSliceSize = 512 * 1024
+	}
+}

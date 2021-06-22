@@ -68,14 +68,12 @@ func (s *fsc) SendSignal() error {
 	var err error
 	conn, err := net.Dial("tcp", s.par.SIP+":"+s.par.PortNumber)
 	if err != nil {
-		DP(err)
 		return err
 	}
 	defer conn.Close()
 
 	_, err = conn.Write([]byte(fmt.Sprintf("%s\n%d\n%d\n%d\n%d\nEOF\n", s.fn, s.fs, s.ps, s.pi, s.tc)))
 	if err != nil {
-		DP(err)
 		return err
 	}
 	defer conn.Close()
@@ -85,7 +83,7 @@ func (s *fsc) SendSignal() error {
 	for {
 		_, err = conn.Read(tb)
 		if err != nil {
-			DP(err)
+			DP(err) //不退出
 		}
 		defer conn.Close()
 		if bytes.Contains(tb, []byte("OK")) {
@@ -101,7 +99,6 @@ func (s *fsc) Readfsc() error {
 	var err error
 	filestat, err := os.Stat(s.fn)
 	if err != nil {
-		DP(err)
 		return err
 	}
 	s.fs = int64(filestat.Size())
@@ -110,26 +107,20 @@ func (s *fsc) Readfsc() error {
 	if s.ps == 0 {
 		s.ps += 11
 	} else {
-		s.ps += 10
+		s.ps += 10 //低端口可能被占用，使用高端口
 	}
 
 	rand.Seed(time.Now().UnixNano())
 	s.pi = rand.Intn(s.par.ListeningStratPlusRandRange)
-	switch {
-	case s.fs >= 100*M1 && s.fs < G1:
-		s.par.FileSliceSize = 5 * M1
-	case s.fs >= G1:
-		s.par.FileSliceSize = 10 * M1
-	default:
-		s.par.FileSliceSize = 512 * 1024
-	}
 
-	s.tc = int(s.fs / s.par.FileSliceSize)
+	s.DefinitionFileSlice()
+
+	s.tc = int(s.fs / s.par.FileSliceSize) //多出来的不够一块，也占一块
 	if s.fs%s.par.FileSliceSize != 0 {
 		s.tc += 1
 	}
 
-	s.ch = make(chan fsb, s.tc*3)
+	s.ch = make(chan fsb, s.tc*3) //channel 大小，不小于两倍即可
 
 	for i := 0; i < s.tc; i++ {
 		var tv1 fsb

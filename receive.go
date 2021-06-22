@@ -142,7 +142,7 @@ func (r *fsc) ReciveData() error {
 
 func (r *fsc) Writefile() error {
 	var err error
-	r.fn = pathc(r.fn)
+	r.fn = pathc(r.fn) //去掉路径
 	f, err := os.Create(r.fn)
 	if err != nil {
 		DP(err)
@@ -211,6 +211,9 @@ func (r *fsc) Processfscdata(indata []byte) error {
 			DP(err)
 			return err
 		}
+	} else {
+		err = fmt.Errorf("Invalid file transmission control data !")
+		return err
 	}
 	switch {
 	case r.fn == "":
@@ -227,14 +230,7 @@ func (r *fsc) Processfscdata(indata []byte) error {
 		return err
 	}
 
-	switch {
-	case r.fs >= 100*M1 && r.fs < G1:
-		r.par.FileSliceSize = 5 * M1
-	case r.fs >= G1:
-		r.par.FileSliceSize = 10 * M1
-	default:
-		r.par.FileSliceSize = 512 * 1024
-	}
+	r.DefinitionFileSlice()
 
 	r.ch = make(chan fsb, r.tc*3)
 

@@ -57,10 +57,7 @@ func (r *fsc) Listening() error {
 		}
 	}()
 
-	for i := 0; i < r.tc; i++ { //利用通道阻塞，等待任务完成
-		<-r.ch
-		// fmt.Sprintf("第[%d]通道建立完成.\n", i+1)
-	}
+	r.WaitChan() //利用通道阻塞，等待任务完成
 	IP("data channel build complete.")
 
 	_, err = conn.Write([]byte("OK"))
@@ -69,13 +66,8 @@ func (r *fsc) Listening() error {
 	}
 	IP("Ready signal sended.")
 
-	for i := 0; i < r.tc; i++ { //利用通道阻塞，等待任务完成
-		<-r.ch
-		// fmt.Sprintf("第[%d]通道数据接收完成.\n", i+1)
-	}
-	if InfoPrintSwitch {
-		fmt.Printf("\n")
-	}
+	r.WaitChan() //利用通道阻塞，等待任务完成
+	IPfn()
 	IP("Data reception completed.")
 
 	return err
@@ -118,9 +110,7 @@ func (r *fsc) ReciveData() error {
 					}
 				}
 				if int64(len(tb)) == blocksize {
-					if InfoPrintSwitch {
-						fmt.Printf(".")
-					}
+					IPfk()
 					var fsber fsb
 					fsber.index = i
 
@@ -153,25 +143,19 @@ func (r *fsc) Writefile() error {
 			if v.index == i {
 				n, err := BufferedWriter.Write(*v.body)
 				if err != nil {
-					DP(err)
 					return err
 				}
 				if int64(n) == v.size {
-					if InfoPrintSwitch {
-						fmt.Printf(".")
-					}
+					IPfk()
 				} else {
-					err = fmt.Errorf("write fail !")
-					return err
+					IPff()
 				}
 				break
 			}
 		}
 	}
 	BufferedWriter.Flush()
-	if InfoPrintSwitch {
-		fmt.Printf("\n")
-	}
+	IPfn()
 	IP("file write complete.")
 	return err
 }

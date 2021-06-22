@@ -38,13 +38,9 @@ func (s *fsc) SendDatas() error {
 
 			if int64(n) == s.fsber[i].size {
 				s.ch <- s.fsber[i]
-				if InfoPrintSwitch {
-					fmt.Printf(".")
-				}
+				IPfk()
 			} else {
-				if InfoPrintSwitch {
-					fmt.Printf("!")
-				}
+				IPff()
 				s.ch <- s.fsber[i]
 				// DP(fmt.Errorf("%s 发送失败，[实发送/应发送] [%d/%d]", SendIP, n, s.fsber[i].size))
 			}
@@ -52,13 +48,8 @@ func (s *fsc) SendDatas() error {
 		}(i)
 	}
 
-	for i := 0; i < s.tc; i++ {
-		<-s.ch
-	}
-
-	if InfoPrintSwitch {
-		fmt.Printf("\n")
-	}
+	s.WaitChan()
+	IPfn()
 	IP("File send complete.")
 	return err
 }
@@ -106,7 +97,7 @@ func (s *fsc) Readfsc() error {
 	if s.ps == 0 {
 		s.ps += 11
 	} else {
-		s.ps += 10 //低端口可能被占用，使用高端口
+		s.ps += 10 //低端口更可能被占用，使用高端口
 	}
 
 	rand.Seed(time.Now().UnixNano())

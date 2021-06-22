@@ -43,6 +43,24 @@ func IP(pc interface{}) {
 	}
 }
 
+func IPfk() {
+	if InfoPrintSwitch {
+		fmt.Printf(".")
+	}
+}
+
+func IPff() {
+	if InfoPrintSwitch {
+		fmt.Printf("!")
+	}
+}
+
+func IPfn() {
+	if InfoPrintSwitch {
+		fmt.Printf("\n")
+	}
+}
+
 func pathc(filename string) string {
 	return path.Base(strings.ReplaceAll(filename, `\`, `/`))
 }
@@ -99,5 +117,11 @@ func (ds *fsc) DefinitionFileSlice() {
 		ds.par.FileSliceSize = 10 * M1
 	default:
 		ds.par.FileSliceSize = 512 * 1024
+	}
+}
+
+func (ss *fsc) WaitChan() {
+	for i := 0; i < ss.tc; i++ {
+		<-ss.ch
 	}
 }

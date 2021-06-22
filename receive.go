@@ -142,6 +142,7 @@ func (r *fsc) ReciveData() error {
 
 func (r *fsc) Writefile() error {
 	var err error
+	r.fn = pathc(r.fn)
 	f, err := os.Create(r.fn)
 	if err != nil {
 		DP(err)

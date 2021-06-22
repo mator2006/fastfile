@@ -45,22 +45,21 @@ func (s *fsc) SendDatas() error {
 				if InfoPrintSwitch {
 					fmt.Printf("!")
 				}
-				DP(fmt.Errorf("%s 发送失败，[实发送/应发送] [%d/%d]", SendIP, n, s.fsber[i].size))
+				s.ch <- s.fsber[i]
+				// DP(fmt.Errorf("%s 发送失败，[实发送/应发送] [%d/%d]", SendIP, n, s.fsber[i].size))
 			}
 
 		}(i)
 	}
 
-	for {
-		if len(s.ch) == s.tc {
-			if InfoPrintSwitch {
-				fmt.Printf("\n")
-			}
-			break
-		}
-		time.Sleep(s.par.LoopWaitTime)
+	for i := 0; i < s.tc; i++ {
+		<-s.ch
 	}
 
+	if InfoPrintSwitch {
+		fmt.Printf("\n")
+	}
+	IP("File send complete.")
 	return err
 }
 
@@ -120,7 +119,7 @@ func (s *fsc) Readfsc() error {
 		s.tc += 1
 	}
 
-	s.ch = make(chan fsb, s.tc*3) //channel 大小，不小于两倍即可
+	s.ch = make(chan fsb)
 
 	for i := 0; i < s.tc; i++ {
 		var tv1 fsb

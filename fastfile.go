@@ -52,7 +52,7 @@ func Send(SIP string, Filename string) {
 		DP(err)
 		return
 	}
-	IP("File transmission complete.")
+
 }
 
 func Receive() {

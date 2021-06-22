@@ -57,29 +57,26 @@ func (r *fsc) Listening() error {
 		}
 	}()
 
-	for { //等待通道建立完成，发送OK信号
-		if len(r.ch) == r.tc {
-			_, err = conn.Write([]byte("OK"))
-			if err != nil {
-				DP(err)
-				return err
-			}
-			IP("Ready signal sended.")
-			break
-		}
-		time.Sleep(r.par.LoopWaitTime)
+	for i := 0; i < r.tc; i++ { //利用通道阻塞，等待任务完成
+		<-r.ch
+		// fmt.Sprintf("第[%d]通道建立完成.\n", i+1)
 	}
+	IP("data channel build complete.")
 
-	for { //等待数据传输完成
-		if len(r.ch) == r.tc*2 {
-			if DebugPrintSwitch {
-				fmt.Printf("\n")
-			}
-			IP("file transmission complete.")
-			break
-		}
-		time.Sleep(r.par.LoopWaitTime)
+	_, err = conn.Write([]byte("OK"))
+	if err != nil {
+		return err
 	}
+	IP("Ready signal sended.")
+
+	for i := 0; i < r.tc; i++ { //利用通道阻塞，等待任务完成
+		<-r.ch
+		// fmt.Sprintf("第[%d]通道数据接收完成.\n", i+1)
+	}
+	if InfoPrintSwitch {
+		fmt.Printf("\n")
+	}
+	IP("Data reception completed.")
 
 	return err
 }
@@ -116,7 +113,7 @@ func (r *fsc) ReciveData() error {
 				tb, err := ioutil.ReadAll(conn)
 				if err != nil {
 					if err != nil {
-						DP(err)
+						DP(err) //不退出循环
 						return
 					}
 				}
@@ -162,16 +159,16 @@ func (r *fsc) Writefile() error {
 				if int64(n) == v.size {
 					if InfoPrintSwitch {
 						fmt.Printf(".")
-					} else {
-						if InfoPrintSwitch {
-							fmt.Printf("!")
-						}
 					}
+				} else {
+					err = fmt.Errorf("write fail !")
+					return err
 				}
 				break
 			}
 		}
 	}
+	BufferedWriter.Flush()
 	if InfoPrintSwitch {
 		fmt.Printf("\n")
 	}
@@ -232,7 +229,8 @@ func (r *fsc) Processfscdata(indata []byte) error {
 
 	r.DefinitionFileSlice()
 
-	r.ch = make(chan fsb, r.tc*3)
+	//r.ch = make(chan fsb, r.tc*3)
+	r.ch = make(chan fsb)
 
 	return err
 }

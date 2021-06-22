@@ -2,7 +2,6 @@ package main
 
 import (
 	"os"
-	"time"
 )
 
 var (
@@ -42,13 +41,11 @@ func Send(SIP string, Filename string) {
 		return
 	}
 
-	go func() {
-		err = s.SendSignal()
-		if err != nil {
-			DP(err)
-			return
-		}
-	}()
+	err = s.SendSignal()
+	if err != nil {
+		DP(err)
+		return
+	}
 
 	err = s.SendDatas()
 	if err != nil {
@@ -66,14 +63,6 @@ func Receive() {
 	if err != nil {
 		DP(err)
 		return
-	}
-
-	for {
-		if len(r.ch) == r.tc*2 {
-			IP("file transmission complete.")
-			break
-		}
-		time.Sleep(r.par.LoopWaitTime)
 	}
 
 	err = r.Writefile()

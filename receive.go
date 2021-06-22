@@ -9,7 +9,6 @@ import (
 	"os"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 )
 
@@ -58,30 +57,38 @@ func (r *fsc) Listening() error {
 		}
 	}()
 
-	for {
+	for { //等待通道建立完成，发送OK信号
 		if len(r.ch) == r.tc {
-			IP("All file data channel started.")
+			_, err = conn.Write([]byte("OK"))
+			if err != nil {
+				DP(err)
+				return err
+			}
+			IP("Ready signal sended.")
 			break
 		}
-		//fmt.Printf("channel_lenth:[%d]\n", len(r.ch))
 		time.Sleep(r.par.LoopWaitTime)
 	}
-	_, err = conn.Write([]byte("OK"))
-	if err != nil {
-		DP(err)
-		return err
+
+	for { //等待数据传输完成
+		if len(r.ch) == r.tc*2 {
+			if DebugPrintSwitch {
+				fmt.Printf("\n")
+			}
+			IP("file transmission complete.")
+			break
+		}
+		time.Sleep(r.par.LoopWaitTime)
 	}
-	IP("Ready signal sended.")
+
 	return err
 }
 
 func (r *fsc) ReciveData() error {
 	var err error
-	var vg sync.WaitGroup
+
 	for i := 0; i < r.tc; i++ {
-		vg.Add(1)
 		go func(i int) {
-			defer vg.Done()
 			ListenIP := fmt.Sprintf("%s:%s", ListeningIP, strconv.Itoa(1024*r.ps+r.pi+i))
 			listen, err := net.Listen("tcp", ListenIP)
 			if err != nil {
@@ -90,7 +97,8 @@ func (r *fsc) ReciveData() error {
 			}
 			defer listen.Close()
 
-			r.ch <- fmt.Sprintf("%d", time.Now().Unix())
+			var vt1 fsb
+			r.ch <- vt1
 
 			conn, err := listen.Accept()
 			if err != nil {
@@ -122,16 +130,13 @@ func (r *fsc) ReciveData() error {
 					fsber.body = &tb
 					fsber.size = blocksize
 					r.fsber = append(r.fsber, fsber)
-					r.ch <- fmt.Sprintf("%d", time.Now().Unix())
+					r.ch <- fsber
 					break
 				}
 			}
 		}(i)
 	}
-	vg.Wait()
-	if InfoPrintSwitch {
-		fmt.Printf("\n")
-	}
+
 	return err
 }
 
@@ -230,7 +235,7 @@ func (r *fsc) Processfscdata(indata []byte) error {
 		r.par.FileSliceSize = 512 * 1024
 	}
 
-	r.ch = make(chan string, r.tc*3)
+	r.ch = make(chan fsb, r.tc*3)
 
 	return err
 }

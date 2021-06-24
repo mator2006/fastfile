@@ -24,7 +24,7 @@ type fsc struct {
 	pi    int           //Port for Listening Strat Plus
 	tc    int           //Transmission Count
 	fsber []fsb         //File body
-	ch    chan fsb      //channel
+	ch    chan string   //channel
 }
 
 type fsb struct {

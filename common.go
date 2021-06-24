@@ -43,18 +43,6 @@ func IP(pc interface{}) {
 	}
 }
 
-func IPfk() {
-	if InfoPrintSwitch {
-		fmt.Printf(".")
-	}
-}
-
-func IPff() {
-	if InfoPrintSwitch {
-		fmt.Printf("!")
-	}
-}
-
 func IPfn() {
 	if InfoPrintSwitch {
 		fmt.Printf("\n")
@@ -122,6 +110,9 @@ func (ds *fsc) DefinitionFileSlice() {
 
 func (ss *fsc) WaitChan() {
 	for i := 0; i < ss.tc; i++ {
-		<-ss.ch
+		chstr := <-ss.ch
+		if InfoPrintSwitch {
+			fmt.Printf(chstr)
+		}
 	}
 }

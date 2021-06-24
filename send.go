@@ -37,11 +37,9 @@ func (s *fsc) SendDatas() error {
 			defer conn.Close()
 
 			if int64(n) == s.fsber[i].size {
-				s.ch <- s.fsber[i]
-				IPfk()
+				s.ch <- "."
 			} else {
-				IPff()
-				s.ch <- s.fsber[i]
+				s.ch <- "!"
 				// DP(fmt.Errorf("%s 发送失败，[实发送/应发送] [%d/%d]", SendIP, n, s.fsber[i].size))
 			}
 
@@ -110,7 +108,7 @@ func (s *fsc) Readfsc() error {
 		s.tc += 1
 	}
 
-	s.ch = make(chan fsb)
+	s.ch = make(chan string)
 
 	for i := 0; i < s.tc; i++ {
 		var tv1 fsb

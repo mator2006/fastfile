@@ -86,8 +86,7 @@ func (r *fsc) ReciveData() error {
 			}
 			defer listen.Close()
 
-			var vt1 fsb
-			r.ch <- vt1
+			r.ch <- ""
 
 			conn, err := listen.Accept()
 			if err != nil {
@@ -110,14 +109,13 @@ func (r *fsc) ReciveData() error {
 					}
 				}
 				if int64(len(tb)) == blocksize {
-					IPfk()
 					var fsber fsb
 					fsber.index = i
 
 					fsber.body = &tb
 					fsber.size = blocksize
 					r.fsber = append(r.fsber, fsber)
-					r.ch <- fsber
+					r.ch <- "."
 					break
 				}
 			}
@@ -137,26 +135,22 @@ func (r *fsc) Writefile() error {
 	}
 	defer f.Close()
 	BufferedWriter := bufio.NewWriter(f)
+	IP("File writing...")
 
 	for i := 0; i < r.tc; i++ {
 		for _, v := range r.fsber {
 			if v.index == i {
-				n, err := BufferedWriter.Write(*v.body)
+				_, err := BufferedWriter.Write(*v.body)
 				if err != nil {
 					return err
 				}
-				if int64(n) == v.size {
-					IPfk()
-				} else {
-					IPff()
-				}
+
 				break
 			}
 		}
 	}
 	BufferedWriter.Flush()
-	IPfn()
-	IP("file write complete.")
+	IP("File write complete.")
 	return err
 }
 
@@ -215,7 +209,7 @@ func (r *fsc) Processfscdata(indata []byte) error {
 	r.DefinitionFileSlice()
 
 	//r.ch = make(chan fsb, r.tc*3)
-	r.ch = make(chan fsb)
+	r.ch = make(chan string)
 
 	return err
 }

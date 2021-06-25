@@ -136,6 +136,7 @@ func (r *fsc) Writefile() error {
 	defer f.Close()
 	BufferedWriter := bufio.NewWriter(f)
 	IP("File writing...")
+	t1 := time.Now()
 
 	for i := 0; i < r.tc; i++ {
 		for _, v := range r.fsber {
@@ -150,7 +151,8 @@ func (r *fsc) Writefile() error {
 		}
 	}
 	BufferedWriter.Flush()
-	IP("File write complete.")
+	IP(fmt.Sprintf("File write complete.time cost [%f] s", time.Now().Sub(t1).Seconds()))
+	// IP("File write complete.")
 	return err
 }
 

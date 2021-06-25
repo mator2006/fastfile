@@ -124,12 +124,14 @@ func bar(n, s int) {
 	var str1 = "-"
 	var str2 = ">"
 	var barlenth float32 = 80
-	barsinit := str2 + strings.Repeat(str1, int(barlenth)-1)
+	barsinit := strings.Repeat(str1, int(barlenth))
 
 	n = n + 1
 	rc := int(float32(n) / float32(s) * barlenth)
 
 	bars := strings.Replace(barsinit, str1, str2, rc)
-
+	if bars[:1] == str1 {
+		bars = str2 + bars[1:]
+	}
 	fmt.Printf("\r[%s] %d%% [%d/%d]", bars, int(float32(rc)*1.25), n, s)
 }

@@ -109,10 +109,27 @@ func (ds *fsc) DefinitionFileSlice() {
 }
 
 func (ss *fsc) WaitChan() {
+
 	for i := 0; i < ss.tc; i++ {
-		chstr := <-ss.ch
-		if InfoPrintSwitch {
-			fmt.Printf(chstr)
+		x := <-ss.ch
+		if x != "" {
+			if InfoPrintSwitch {
+				bar(i, ss.tc)
+			}
 		}
 	}
+}
+
+func bar(n, s int) {
+	var str1 = "-"
+	var str2 = ">"
+
+	var barlenth float32 = 80
+	nf := float32(n + 1)
+	sf := float32(s)
+	barsinit := strings.Repeat(str1, int(barlenth))
+
+	bars := strings.Replace(barsinit, str1, str2, int(nf/sf*barlenth))
+
+	fmt.Printf("\r[%s%s] [%d/%d]", str2, bars[1:], n+1, s)
 }

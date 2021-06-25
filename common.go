@@ -123,13 +123,13 @@ func (ss *fsc) WaitChan() {
 func bar(n, s int) {
 	var str1 = "-"
 	var str2 = ">"
-
 	var barlenth float32 = 80
-	nf := float32(n + 1)
-	sf := float32(s)
-	barsinit := strings.Repeat(str1, int(barlenth))
+	barsinit := str2 + strings.Repeat(str1, int(barlenth)-1)
 
-	bars := strings.Replace(barsinit, str1, str2, int(nf/sf*barlenth))
+	n = n + 1
+	rc := int(float32(n) / float32(s) * barlenth)
 
-	fmt.Printf("\r[%s%s] [%d/%d]", str2, bars[1:], n+1, s)
+	bars := strings.Replace(barsinit, str1, str2, rc)
+
+	fmt.Printf("\r[%s] %d%% [%d/%d]", bars, int(float32(rc)*1.25), n, s)
 }

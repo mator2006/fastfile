@@ -65,7 +65,7 @@ func (s *fsc) SendSignal() error {
 		return err
 	}
 	defer conn.Close()
-	IP("File send control data sended.")
+	IP("File transmission control data sended.")
 
 	tb := make([]byte, s.par.SignalByteSize)
 	for {

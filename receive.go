@@ -21,7 +21,7 @@ func (r *fsc) Listening() error {
 		return err
 	}
 	defer listen.Close()
-	IP("Listenning for file trandmission control signal.")
+	IP("Listenning for file transmission control signal.")
 
 	conn, err := listen.Accept()
 	if err != nil {
@@ -37,7 +37,7 @@ func (r *fsc) Listening() error {
 			DP(err)
 		}
 		if bytes.Contains(buf[:n], []byte("EOF")) {
-			DP("Get file transmission contron signal.")
+			DP("Get signal for file transmission control.")
 			break
 		}
 		time.Sleep(r.par.LoopWaitTime)
@@ -151,7 +151,7 @@ func (r *fsc) Writefile() error {
 		}
 	}
 	BufferedWriter.Flush()
-	IP(fmt.Sprintf("File write complete.time cost [%f] s", time.Now().Sub(t1).Seconds()))
+	IP(fmt.Sprintf("File write complete. time cost [%f] s", time.Now().Sub(t1).Seconds()))
 	// IP("File write complete.")
 	return err
 }
